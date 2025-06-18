@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧語音代辦事項小助手</title>
+    <!-- 已自動移除 Google Translate 相關 <link> 和 <script>，避免 CSP 錯誤 -->
+    <style>
+        :root {
+    /* 右側日曆欄排版修正 */
+    .main-layout {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: flex-start;
+        gap: 32px;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+    }
+    .container {
+        flex: 1 1 0;
+        min-width: 340px;
+        max-width: 700px;
+    }
+    #calendarPanel {
+        order: 2;
+    }
+    --green-bg: #f3f8f3;
+    --green-main: #cbe7cb;
+    --green-accent: #b7d8b7;
+    --green-btn: #b7d8b7;
+    --green-btn-hover: #a2c7a2;
+    --green-danger: #b7d8b7;
+    --green-white: #f8f7f4;
+    --green-dark: #2e3d2e;
+}
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--green-bg);
+    margin: 0;
+    padding: 0;
+    color: var(--green-dark);
+}
+.container {
+    max-width: 600px;
+    margin: 60px auto;
+    background: var(--green-white);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    padding: 40px 32px;
+    text-align: center;
+    color: var(--green-dark);
+}
+h1, h3, h4, label, select, input, p, span, small, div, ul, li {
+    color: var(--green-dark) !important;
+}
+.btn, .mic-btn {
+    display: inline-block;
+    margin-top: 24px;
+    padding: 12px 32px;
+    background: var(--green-btn);
+    color: var(--green-dark);
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    box-shadow: 0 2px 8px #0001;
+}
+.btn.action, .btn.delete {
+    background: var(--green-dark);
+    color: #fff;
+}
+.btn.action:hover, .btn.delete:hover {
+    background: #1d261d;
+    color: #fff;
+}
+.btn:hover, .mic-btn:hover {
+    background: var(--green-btn-hover);
+    color: #fff;
+}
+.mic-btn {
+    margin-left: 12px;
+    background: var(--green-main);
+    color: var(--green-dark);
+}
+.mic-btn:hover {
+    background: var(--green-accent);
+    color: #fff;
+}
+ul.todo-list li {
+    background: var(--green-main);
+    margin-bottom: 12px;
+    padding: 14px 20px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 4px #0001;
+    color: var(--green-dark);
+}
+.done {
+    text-decoration: line-through;
+    color: #7a8a7a !important;
+}
+/* 日曆欄排版修正 */
+#calendarPanel {
+    background: var(--green-white);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px #0001;
+    padding: 24px 18px;
+    color: var(--green-dark);
+    position: relative;
+    margin-left: 32px;
+    margin-top: 60px;
+    min-width: 340px;
+    max-width: 480px;
+    flex: 0 0 440px;
+    align-self: flex-start;
+    height: fit-content;
+}
+@media (max-width: 900px) {
+    .main-layout {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .container {
+        max-width: 100% !important;
+    }
+    #calendarPanel {
+        position: static !important;
+        margin-left: 0 !important;
+        margin-top: 32px !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        width: 100%;
+        order: unset;
+    }
+}
+#calendar {
+    margin-top: 12px;
+}
+#calendar table {
+    background: var(--green-white);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px #0001;
+}
+#calendar th {
+    background: var(--green-main);
+    color: var(--green-dark);
+    font-weight: 600;
+    padding: 8px 0;
+    font-size: 1.1em;
+}
+#calendar td {
+    background: var(--green-bg);
+    border: 1px solid var(--green-main);
+    min-width: 180px;
+    width: 180px;
+    padding: 4px 4px;
+    font-size: 1.1em;
+    vertical-align: top;
+    color: var(--green-dark);
+}
+#calendar ul {
+    padding-left: 14px;
+    margin: 2px 0 0 0;
+    list-style-type: disc;
+}
+#calendar li {
+    font-size: 0.1em !important;
+    margin-bottom: 1px;
+    background: var(--green-accent);
+    border-radius: 7px;
+    padding: 2px 6px;
+    color: var(--green-dark);
+    display: flex;
+    align-items: center;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    word-break: break-all;
+}
+#calendar li[style*=\"line-through\"] {
+    background: #e0e0e0;
+    color: #aaa !important;
+}
+#calendar .calendar-editable {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--green-dark);
+}
+input[type=\"text\"].calendar-edit-input {
+    background: #fff;
+    border: 1px solid var(--green-main);
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 1em;
+    color: var(--green-dark);
+}
+#aiResponse, #undoneList, #arduinoStatus, #calendarOptionsModal > div {
+    color: var(--green-dark) !important;
+}
+#arduinoPanel {
+    background: var(--green-bg);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px #0001;
+    color: var(--green-dark);
+}
+#calendarOptionsModal > div {
+    background: var(--green-white);
+    color: var(--green-dark);
+}
+#calendarOptionsModal label, #calendarOptionsModal select {
+    color: var(--green-dark);
+}
+#calendarOptionsModal button {
+    background: var(--green-main);
+    color: var(--green-dark);
+}
+#calendarOptionsModal button:hover {
+    background: var(--green-accent);
+}
+    </style>
+</head>
+<body>
+    <div class="main-layout">
+      <div class="container" style="flex:1 1 600px;min-width:340px;margin:60px 0 0 0;">
+        <h1>智慧語音代辦事項小助手</h1>
+        <p>用語音快速新增、分類、管理你的待辦事項！</p>
+        <div>
+            <input type="text" id="taskInput" placeholder="輸入或說出你的任務..." style="width:60%;padding:10px;">
+            <button class="btn" onclick="addTask()">新增任務</button>
+            <button class="mic-btn" onclick="startVoiceInput()">🎤 語音輸入</button>
+        </div>
+        <ul class="todo-list" id="todoList"></ul>
+        <div id="aiResponse" style="margin-top:24px;color:#2563eb;"></div>
+        <div id="undoneList" style="margin-top:16px;color:#e67e22;"></div>
+        <div id="arduinoStatus" style="margin-top:16px;color:#b91c1c;"></div>
+        <div id="arduinoPanel" style="margin-top:24px;padding:18px 0;background:#f8fafc;border-radius:8px;box-shadow:0 2px 8px #0001;max-width:400px;margin-left:auto;margin-right:auto;"></div>
+      </div>
+      <!-- 日曆欄移到 main-layout 內，container 旁邊 -->
+      <div id="calendarPanel" style="position:sticky;top:40px;flex:0 0 440px;min-width:340px;max-width:480px;height:fit-content;background:#fff;border-radius:12px;box-shadow:0 4px 24px #0001;padding:24px 18px;margin:60px 0 0 24px;z-index:1;align-self:flex-start;">
+        <h3 style="margin-top:0;color:#2563eb;">任務日曆</h3>
+        <!-- <button id="calendarOptionsBtn" class="btn" style="margin-bottom:12px;float:right;padding:6px 18px;font-size:1em;">選項</button> -->
+        <div style="clear:both"></div>
+        <div id="calendarOptionsModal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);align-items:center;justify-content:center;">
+          <div style="background:#fff;padding:32px 24px 24px 24px;border-radius:12px;min-width:320px;max-width:90vw;box-shadow:0 8px 32px #0003;position:relative;">
+            <button onclick="closeCalendarOptions()" style="position:absolute;right:12px;top:12px;font-size:1.2em;background:none;border:none;cursor:pointer;">✕</button>
+            <h4 style="margin-top:0;color:#2563eb;">批次編輯日曆任務</h4>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <label>年：
+                <select id="calendarOptYear" style="font-size:1em;padding:2px 6px;"></select>
+              </label>
+              <label>月：
+                <select id="calendarOptMonth" style="font-size:1em;padding:2px 6px;"></select>
+              </label>
+              <label>日：
+                <select id="calendarOptDay" style="font-size:1em;padding:2px 6px;"></select>
+              </label>
+              <label>時：
+                <select id="calendarOptHour" style="font-size:1em;padding:2px 6px;"></select>
+              </label>
+            </div>
+            <div id="calendarOptionsTasks" style="margin-top:16px;"></div>
+            <div id="calendarOptActionBtns" style="margin-top:18px;display:none;gap:12px;">
+              <button class="btn" id="calendarOptConfirmBtn" style="background:#4f8cff;">確認更改</button>
+              <button class="btn" id="calendarOptCancelBtn" style="background:#aaa;">取消</button>
+            </div>
+            <button class="btn" style="margin-top:18px;background:#4f8cff;" onclick="syncCalendarToMain()">同步主清單</button>
+          </div>
+        </div>
+        <div id="calendar"></div>
+      </div>
+    </div>
+            <h3 style="margin:0 0 8px 0;color:#2563eb;">Arduino 狀態</h3>
+            <div id="arduinoStateText" style="font-size:1.1em;color:#333;">尚未同步</div>
+            <button onclick="connectArduino()" style="margin-top:10px;padding:8px 18px;">連接 Arduino</button>
+        </div>
+    </div>
+
+</body>
+<script>
+// 任務資料
+let tasks = [];
+// 日曆資料
+let calendarTasks = {};
+
+// ========== 主要功能實作 ===========
+function addTaskToCalendar(raw, displayText) {
+    let dateStr = '';
+    let timeStr = '';
+    let today = new Date();
+    let m = raw.match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+    if (m) {
+        dateStr = `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+    } else {
+        m = raw.match(/(\d{1,2})[\/-](\d{1,2})/);
+        if (m) {
+            dateStr = `${today.getFullYear()}-${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}`;
+        } else if (/明天/.test(raw)) {
+            let d = new Date(today.getTime() + 86400000);
+            dateStr = d.toISOString().slice(0,10);
+        } else if (/後天/.test(raw)) {
+            let d = new Date(today.getTime() + 2*86400000);
+            dateStr = d.toISOString().slice(0,10);
+        } else if (/今天/.test(raw)) {
+            dateStr = today.toISOString().slice(0,10);
+        }
+    }
+    let t = raw.match(/(早上|上午|中午|下午|晚上)?\s*(\d{1,2})(:|點|時)?(\d{1,2})?/);
+    if (t && (t[1] || t[2])) {
+        timeStr = (t[1] || '') + (t[2] ? t[2] + (t[3] === ':' && t[4] ? ':' + t[4] : '點') : '');
+        if (t[3] && t[3] !== ':' && t[4]) timeStr += t[4] + '分';
+    }
+    if (dateStr) {
+        if (!calendarTasks[dateStr]) calendarTasks[dateStr] = [];
+        let calText = '';
+        let t = raw.match(/(早上|上午|中午|下午|晚上)?\s*(\d{1,2})(:|點|時)?(\d{1,2})?/);
+        let timeStr2 = '';
+        if (t && (t[1] || t[2])) {
+            timeStr2 = (t[1] || '') + (t[2] ? t[2] + (t[3] === ':' && t[4] ? ':' + t[4] : '點') : '');
+            if (t[3] && t[3] !== ':' && t[4]) timeStr2 += t[4] + '分';
+        }
+        let mainVerb = '';
+        let taskMatch = raw.match(/要(.+)/);
+        if (taskMatch) {
+            mainVerb = taskMatch[1].replace(/[，。,.]/g, '').trim();
+        } else {
+            mainVerb = raw.replace(/(今天|明天|後天)?(早上|上午|中午|下午|晚上)?(\d{1,2})(點|:|時)?(\d{1,2})?/, '').replace(/[，。,.]/g, '').replace(/要$/,'').trim();
+        }
+        calText = (timeStr2 ? timeStr2 + ' ' : '') + mainVerb;
+        calendarTasks[dateStr].push(calText);
+        renderCalendar();
+    }
+}
+function renderCalendar() {
+    const cal = document.getElementById('calendar');
+    let today = new Date();
+    let year = today.getFullYear();
+    let month = today.getMonth();
+    let firstDay = new Date(year, month, 1).getDay();
+    let daysInMonth = new Date(year, month + 1, 0).getDate();
+    let dayTaskMap = {};
+    for (let d in calendarTasks) {
+        let dt = new Date(d);
+        if (dt.getFullYear() === year && dt.getMonth() === month) {
+            let day = dt.getDate();
+            dayTaskMap[day] = calendarTasks[d];
+        }
+    }
+    let html = `<table style=\"width:100%;border-collapse:collapse;table-layout:fixed;\"><thead><tr>`;
+    const weekDays = ['日','一','二','三','四','五','六'];
+    for (let w of weekDays) html += `<th style=\"padding:4px;color:#2563eb;\">${w}</th>`;
+    html += '</tr></thead><tbody><tr>';
+    let col = 0;
+    for (let i = 0; i < firstDay; i++) { html += '<td></td>'; col++; }
+    for (let d = 1; d <= daysInMonth; d++) {
+        let cellTasks = dayTaskMap[d] || [];
+        html += `<td style=\"vertical-align:top;min-height:100px;height:100px;padding:8px 4px;border:1px solid #eee;font-size:1.1em;\"><div style=\"font-weight:bold;font-size:1.3em;\">${d}</div>`;
+        if (cellTasks.length > 0) {
+            html += '<ul style=\"padding-left:14px;margin:2px 0 0 0;list-style-type:disc;\">';
+            for (let j = 0; j < cellTasks.length; j++) {
+                let t = cellTasks[j];
+                let matchedIdx = tasks.findIndex(task => task.text === t);
+                let matched = matchedIdx !== -1 ? tasks[matchedIdx] : null;
+                html += `<li${matched && matched.done ? ' style=\"text-decoration:line-through;color:#aaa;font-size:0.16em;\"' : ' style=\"font-size:0.16em;\"'}>`;
+                html += `<span class='calendar-editable' data-day='${d}' data-idx='${j}' style='cursor:pointer;display:inline-block;width:70%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;'>${t}</span>`;
+// 事件委派：日曆欄任務內容雙擊可編輯
+document.addEventListener('dblclick', function(e) {
+    if (e.target.classList && e.target.classList.contains('calendar-editable')) {
+        const span = e.target;
+        const day = span.getAttribute('data-day');
+        const idx = parseInt(span.getAttribute('data-idx'));
+        enableCalendarEdit(span, day, idx);
+    }
+});
+// 雙擊啟用日曆欄任務編輯
+function enableCalendarEdit(span, day, idx) {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const oldVal = calendarTasks[dateStr][idx];
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = oldVal;
+    input.style.fontSize = '1em';
+    input.style.width = '70%';
+    input.style.padding = '1px 4px';
+    input.onblur = function() {
+        finishCalendarEdit(input, span, day, idx);
+    };
+    input.onkeydown = function(e) {
+        if (e.key === 'Enter') input.blur();
+    };
+    // 保留原 span 以利還原
+    span.style.display = 'none';
+    span.parentNode.insertBefore(input, span);
+    input.focus();
+    input.select();
+}
+
+function finishCalendarEdit(input, span, day, idx) {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const newVal = input.value.trim();
+    if (newVal === '') {
+        input.remove();
+        span.style.display = '';
+        return;
+    }
+    const oldVal = calendarTasks[dateStr][idx];
+    calendarTasks[dateStr][idx] = newVal;
+    // 同步主清單內容
+    const taskIdx = tasks.findIndex(task => task.text === oldVal);
+    if (taskIdx !== -1) {
+        tasks[taskIdx].text = newVal;
+        renderTasks();
+    }
+    // 還原為 span 並更新內容
+    span.textContent = newVal;
+    input.remove();
+    span.style.display = '';
+}
+                if (matched) {
+                  html += ` <button style='margin-left:4px;font-size:0.9em;padding:1px 8px;' onclick='toggleCalendarTaskDone("${d}",${j})'>${matched.done ? '復原' : '完成'}</button>`;
+                }
+                html += `</li>`;
+            }
+// 日曆欄直接編輯任務內容，並同步主清單
+function editCalendarTaskContentByDay(day, idx, newVal) {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    if (newVal.trim() === '') return;
+    const oldVal = calendarTasks[dateStr][idx];
+    calendarTasks[dateStr][idx] = newVal;
+    // 同步主清單內容
+    const taskIdx = tasks.findIndex(task => task.text === oldVal);
+    if (taskIdx !== -1) {
+        tasks[taskIdx].text = newVal;
+        renderTasks();
+    }
+    renderCalendar();
+}
+            html += '</ul>';
+        }
+        html += '</td>';
+        col++;
+        if (col % 7 === 0 && d !== daysInMonth) html += '</tr><tr>';
+    }
+// 日曆欄切換完成/復原，並同步主清單
+function toggleCalendarTaskDone(day, idx) {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const t = calendarTasks[dateStr][idx];
+    const taskIdx = tasks.findIndex(task => task.text === t);
+    if (taskIdx !== -1) {
+        tasks[taskIdx].done = !tasks[taskIdx].done;
+        renderTasks();
+        renderCalendar();
+        notifyArduino();
+    }
+}
+    while (col % 7 !== 0) { html += '<td></td>'; col++; }
+    html += '</tr></tbody></table>';
+    cal.innerHTML = html;
+}
+function renderTasks() {
+    const list = document.getElementById('todoList');
+    list.innerHTML = '';
+    tasks.forEach((task, idx) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class=\"${task.done ? 'done' : ''}\">${task.text} <small>(${task.category})</small></span>` +
+            `<span style='float:right;display:flex;gap:0;'>` +
+            `<button class=\"btn\" style=\"padding:4px 12px;font-size:0.9em;margin-left:0;\" onclick=\"toggleDone(${idx})\">${task.done ? '復原' : '完成'}</button>` +
+            `<button class=\"btn\" style=\"padding:4px 12px;font-size:0.9em;background:#e53e3e;margin-left:0;\" onclick=\"deleteTask(${idx})\">刪除</button>` +
+            `</span>`;
+        list.appendChild(li);
+    });
+}
+function deleteTask(idx) {
+    if (!confirm('確定要刪除這個任務嗎？')) return;
+    const deleted = tasks[idx].text;
+    let main = deleted;
+    let time = '';
+    let m = deleted.match(/(.+?)\s*([（(][^）)]*[)）])?$/);
+    if (m) {
+        main = m[1].trim();
+        if (m[2]) time = m[2].replace(/[（）()]/g, '').trim();
+    }
+    for (let date in calendarTasks) {
+        calendarTasks[date] = calendarTasks[date].filter(t => {
+            if (t === deleted) return false;
+            let tNorm = t.replace(/[（）()]/g, '').replace(/\s+/g, '');
+            let mainNorm = main.replace(/[（）()]/g, '').replace(/\s+/g, '');
+            if (tNorm === mainNorm) return false;
+            if (tNorm.includes(mainNorm) || mainNorm.includes(tNorm)) return false;
+            if (time) {
+                let timeNorm = time.replace(/[（）()]/g, '').replace(/\s+/g, '');
+                if (tNorm.includes(mainNorm+timeNorm) || (mainNorm+timeNorm).includes(tNorm)) return false;
+            }
+            return true;
+        });
+        if (calendarTasks[date].length === 0) delete calendarTasks[date];
+    }
+    tasks.splice(idx, 1);
+    renderTasks();
+    renderCalendar();
+    notifyArduino();
+}
+function toggleDone(idx) {
+    tasks[idx].done = !tasks[idx].done;
+    renderTasks();
+    notifyArduino();
+}
+function startVoiceInput() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert('此瀏覽器不支援語音辨識');
+        return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'zh-TW';
+    recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('taskInput').value = transcript;
+        addTask(transcript);
+    };
+    recognition.start();
+}
+async function callAI(text) {
+    const res = await fetch('http://localhost:5000/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+    });
+    return await res.json();
+}
+function notifyArduino() {
+    let unfinished = tasks.filter(t => !t.done).length;
+    let status = '';
+    if (tasks.length === 0) {
+        status = '🔴 目前無未完成的任務';
+    } else if (unfinished === 0) {
+        status = '🟢 所有任務已完成，綠燈';
+    } else {
+        status = '🔴 尚有 ' + unfinished + ' 項未完成，紅燈';
+    }
+    document.getElementById('arduinoStatus').innerText = status;
+    if (arduinoWriter) {
+        if (tasks.length === 0) {
+            sendToArduino('G');
+            document.getElementById('arduinoStateText').innerText = '綠燈：目前無未完成的任務';
+        } else if (unfinished === 0) {
+            sendToArduino('G');
+            document.getElementById('arduinoStateText').innerText = '綠燈：所有任務已完成';
+        } else {
+            sendToArduino('R');
+            document.getElementById('arduinoStateText').innerText = `紅燈：尚有 ${unfinished} 項未完成`;
+        }
+    } else {
+        document.getElementById('arduinoStateText').innerText = '尚未連接 Arduino';
+    }
+}
+function openCalendarOptions() {
+    document.getElementById('calendarOptionsModal').style.display = 'flex';
+    const now = new Date();
+    const ySel = document.getElementById('calendarOptYear');
+    const mSel = document.getElementById('calendarOptMonth');
+    const dSel = document.getElementById('calendarOptDay');
+    const hSel = document.getElementById('calendarOptHour');
+    ySel.innerHTML = '';
+    for(let y=now.getFullYear()-2;y<=now.getFullYear()+2;y++) ySel.innerHTML += `<option value="${y}"${y===now.getFullYear()?' selected':''}>${y}</option>`;
+    mSel.innerHTML = '';
+    for(let m=1;m<=12;m++) mSel.innerHTML += `<option value="${m.toString().padStart(2,'0')}"${m===now.getMonth()+1?' selected':''}>${m}</option>`;
+    updateDayOptions();
+    hSel.innerHTML = '<option value="">--</option>';
+    for(let h=0;h<24;h++) hSel.innerHTML += `<option value="${h.toString().padStart(2,'0')}">${h.toString().padStart(2,'0')}</option>`;
+    ySel.onchange = mSel.onchange = function(){ updateDayOptions(); showOptActionBtns(); };
+    dSel.onchange = hSel.onchange = showOptActionBtns;
+    function updateDayOptions() {
+        const y = parseInt(ySel.value), m = parseInt(mSel.value);
+        const days = new Date(y, m, 0).getDate();
+        dSel.innerHTML = '';
+        for(let d=1;d<=days;d++) dSel.innerHTML += `<option value="${d.toString().padStart(2,'0')}"${d===now.getDate()?' selected':''}>${d}</option>`;
+    }
+    function showOptActionBtns() {
+        document.getElementById('calendarOptActionBtns').style.display = 'flex';
+        renderCalendarOptionsTasks(getOptDateStr());
+    }
+    function getOptDateStr() {
+        return ySel.value+'-'+mSel.value+'-'+dSel.value;
+    }
+    renderCalendarOptionsTasks(getOptDateStr());
+    document.getElementById('calendarOptActionBtns').style.display = 'none';
+    document.getElementById('calendarOptConfirmBtn').onclick = function(){ closeCalendarOptions(); };
+    document.getElementById('calendarOptCancelBtn').onclick = function(){ closeCalendarOptions(); };
+}
+function renderCalendarOptionsTasks(dateStr) {
+    const box = document.getElementById('calendarOptionsTasks');
+    if (!calendarTasks[dateStr] || calendarTasks[dateStr].length === 0) {
+        box.innerHTML = '<span style="color:#aaa;">此日暫無任務</span>';
+        return;
+    }
+    box.innerHTML = '';
+    calendarTasks[dateStr].forEach((t, idx) => {
+        box.innerHTML += `<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+          <input type="text" value="${t}" style="flex:1;padding:4px 8px;font-size:1em;" onchange="editCalendarTaskContent('${dateStr}',${idx},this.value)">
+          <button style="background:#e53e3e;color:#fff;padding:2px 10px;border:none;border-radius:4px;" onclick="deleteCalendarTask('${dateStr}',${idx})">刪除</button>
+        </div>`;
+    });
+}
+function editCalendarTaskContent(dateStr, idx, newVal) {
+    if (newVal.trim() === '') return;
+    calendarTasks[dateStr][idx] = newVal;
+    renderCalendar();
+}
+function deleteCalendarTask(dateStr, idx) {
+    if (!confirm('確定要刪除此任務？')) return;
+    calendarTasks[dateStr].splice(idx,1);
+    if (calendarTasks[dateStr].length === 0) delete calendarTasks[dateStr];
+    renderCalendarOptionsTasks(dateStr);
+    renderCalendar();
+}
+function syncCalendarToMain() {
+    tasks.forEach(task => {
+        let raw = task.text;
+        let dateStr = '';
+        let today = new Date();
+        let m = raw.match(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+        if (m) {
+          dateStr = `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+        } else {
+          m = raw.match(/(\d{1,2})[\/-](\d{1,2})/);
+          if (m) {
+            dateStr = `${today.getFullYear()}-${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}`;
+          } else if (/明天/.test(raw)) {
+            let d = new Date(today.getTime() + 86400000);
+            dateStr = d.toISOString().slice(0,10);
+          } else if (/後天/.test(raw)) {
+            let d = new Date(today.getTime() + 2*86400000);
+            dateStr = d.toISOString().slice(0,10);
+          } else if (/今天/.test(raw)) {
+            dateStr = today.toISOString().slice(0,10);
+          }
+        }
+        if (dateStr) {
+          if (!calendarTasks[dateStr]) calendarTasks[dateStr] = [];
+          if (!calendarTasks[dateStr].includes(task.text)) calendarTasks[dateStr].push(task.text);
+        }
+    });
+    renderCalendar();
+    alert('已同步主清單任務到日曆！');
+}
+
+// 新增任務
+function addTask(text) {
+    const input = document.getElementById('taskInput');
+    const value = text || input.value.trim();
+    if (!value) return;
+    // 若輸入有「已完成」等關鍵字，嘗試自動完成現有任務
+    if (/已完成|完成|done|已做|已辦|已解決|已處理/i.test(value)) {
+        // 擷取時間片段
+        const timePattern = /(今天|明天|後天)?(早上|上午|中午|下午|晚上)?(\d{1,2})(點|:|時)?(\d{1,2})?/;
+        let timeInfo = '';
+        let mainTask = value;
+        let cutIdx = value.indexOf('要');
+        let beforeYao = cutIdx > 0 ? value.slice(0, cutIdx) : '';
+        let m = beforeYao.match(timePattern);
+        if (m) {
+            let when = (m[1] || '') + (m[2] || '');
+            let hour = m[3] || '';
+            let min = m[5] || '';
+            timeInfo = when + (hour ? hour + '點' : '') + (min ? (':' + min) : '');
+        }
+        // 主動詞
+        let mainVerb = '';
+        let taskMatch = value.match(/要(.+)/);
+        if (taskMatch) {
+            mainVerb = taskMatch[1].replace(/[，。,.已完成完成done已做已辦已解決已處理]/gi, '').trim();
+        } else {
+            mainVerb = value.replace(timePattern, '').replace(/[，。,.已完成完成done已做已辦已解決已處理]/gi, '').replace(/要$/,'').trim();
+        }
+        let targetText = (timeInfo ? timeInfo + ' ' : '') + mainVerb;
+        // 在 tasks 中尋找最接近的任務
+        let found = false;
+        for (let i = 0; i < tasks.length; i++) {
+            // 比對忽略空白
+            if (tasks[i].text.replace(/\s+/g,'') === targetText.replace(/\s+/g,'')) {
+                tasks[i].done = true;
+                found = true;
+            }
+        }
+        renderTasks();
+        notifyArduino();
+        document.getElementById('aiResponse').innerText = found ? '✅ 已自動標記完成：' + targetText : '⚠️ 找不到對應任務：' + targetText;
+        return;
+    }
+    // 呼叫AI API判斷重複、分類
+    callAI(value).then(aiResult => {
+        // 查詢未完成事項
+        if (aiResult.category === '查詢') {
+            const undoneDiv = document.getElementById('undoneList');
+            const undoneTasks = tasks.filter(t => !t.done);
+            let speakText = '';
+            if (tasks.length === 0) {
+                document.getElementById('aiResponse').innerText = '🎉 目前沒有未完成的事項！';
+                undoneDiv.innerText = '';
+                speakText = '目前沒有未完成的事項。';
+            } else if (undoneTasks.length > 0) {
+                document.getElementById('aiResponse').innerText = '未完成事項查詢結果：';
+                undoneDiv.innerHTML = '<ul style="padding-left:20px;">' + undoneTasks.map((t,i)=>`<li>${i+1}. ${t.text}</li>`).join('') + '</ul>';
+                speakText = '你還有' + undoneTasks.length + '項未完成的事項：' + undoneTasks.map((t,i)=>`第${i+1}項，${t.text}`).join('，');
+            } else {
+                document.getElementById('aiResponse').innerText = '未完成事項查詢結果：';
+                undoneDiv.innerHTML = '<span>（目前所有任務都已完成）</span>';
+                speakText = '所有任務都已完成。';
+            }
+            // 語音回覆
+            if ('speechSynthesis' in window) {
+                const utter = new SpeechSynthesisUtterance(speakText);
+                utter.lang = 'zh-TW';
+                window.speechSynthesis.speak(utter);
+            }
+            return;
+        }
+        if (aiResult.duplicate) {
+            document.getElementById('aiResponse').innerText = '⚠️ 已有相似任務：「' + aiResult.similar + '」';
+            return;
+        }
+        // 時間分類（最穩定：直接在「要」前找時間）
+        let timeInfo = '';
+        let mainTask = value;
+        const timeTaskPattern = /要(.+)/;
+        let cutIdx = value.indexOf('要');
+        let beforeYao = cutIdx > 0 ? value.slice(0, cutIdx) : '';
+        // 只要 beforeYao 裡有「(今天|明天|後天)?(早上|上午|中午|下午|晚上)?(\d{1,2})點?」就擷取
+        const timePattern = /(今天|明天|後天)?(早上|上午|中午|下午|晚上)?(\d{1,2})(點|:|時)?(\d{1,2})?/;
+        let m = beforeYao.match(timePattern);
+        if (m) {
+            let when = (m[1] || '') + (m[2] || '');
+            let hour = m[3] || '';
+            let min = m[5] || '';
+            timeInfo = when + (hour ? hour + '點' : '') + (min ? (':' + min) : '');
+        }
+        let taskMatch = value.match(timeTaskPattern);
+        if (taskMatch) {
+            mainTask = taskMatch[1].replace(/[，。,.]/g, '').trim();
+        } else {
+            mainTask = value.replace(timePattern, '').replace(/[，。,.]/g, '').replace(/要$/,'').trim();
+        }
+        // 顯示格式：時間片段+主動詞
+        let displayText = mainTask;
+        if (timeInfo) {
+            // 避免重複時間片段
+            if (!mainTask.startsWith(timeInfo)) {
+                displayText = `${timeInfo} ${mainTask}`;
+            } else {
+                displayText = mainTask;
+            }
+        }
+        // 判斷是否有「已完成」或「完成」等關鍵字
+        let isDone = /已完成|完成|done|已做|已辦|已解決|已處理/i.test(value);
+        tasks.push({ text: displayText, category: aiResult.category, done: isDone });
+        addTaskToCalendar(value, displayText);
+        renderTasks();
+        input.value = '';
+        document.getElementById('aiResponse').innerText = '✅ 已新增任務，分類為：' + aiResult.category + (isDone ? '（已自動標記完成）' : '');
+        notifyArduino();
+    }).catch(err => {
+        // 容錯：AI API 失敗時也能新增
+        let mainTask = value;
+        let displayText = value;
+        tasks.push({ text: displayText, category: '其他', done: false });
+        addTaskToCalendar(value, displayText);
+        renderTasks();
+        input.value = '';
+        document.getElementById('aiResponse').innerText = '⚠️ AI 分析失敗，已直接新增任務';
+        notifyArduino();
+    });
+}
+
+// (已移除重複空殼函式)
+let arduinoPort;
+let arduinoWriter;
+async function connectArduino() {
+    if ('serial' in navigator) {
+        try {
+            arduinoPort = await navigator.serial.requestPort();
+            await arduinoPort.open({ baudRate: 9600 });
+            arduinoWriter = arduinoPort.writable.getWriter();
+            document.getElementById('arduinoStateText').innerText = '已連接 Arduino';
+        } catch (e) {
+            document.getElementById('arduinoStateText').innerText = '連接失敗: ' + e;
+        }
+    } else {
+        alert('你的瀏覽器不支援 Web Serial API，請用 Chrome/Edge。');
+    }
+}
+async function sendToArduino(cmd) {
+    if (arduinoWriter) {
+        const data = new TextEncoder().encode(cmd);
+        await arduinoWriter.write(data);
+    }
+}
+// (已移除重複空殼函式)
+function closeCalendarOptions() {
+    document.getElementById('calendarOptionsModal').style.display = 'none';
+}
+// (已移除重複空殼函式)
+// 頁面載入時渲染
+renderTasks();
+renderCalendar();
+</script>
+</html>
